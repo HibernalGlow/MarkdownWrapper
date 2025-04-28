@@ -1,35 +1,94 @@
 """
-文本格式化模块，用于处理Markdown文本中的格式问题
+文本格式化模块，处理Markdown文本的格式问题
 """
 import re
 import pangu
-from src.formatters.code_protector import CodeBlockProtector
 import logging
-class TextFormatter:
-    """文本格式化类，用于格式化Markdown文档"""
-    def __init__(self):
-        self.code_protector = CodeBlockProtector()
+from src.core.base_processor import BaseProcessor
+from src.core.code_protector import CodeProtectorProcessor
+
+class TextFormatterProcessor(BaseProcessor):
+    """文本格式化处理器"""
     
-    def format_text(self, text):
-        """格式化文本：处理中英文间距、标点符号等"""
-        # 保护代码块
-        text = self.code_protector.protect_codes(text)
+    def __init__(self, output_dir=None):
+        """初始化处理器"""
+        super().__init__(output_dir)
+        self.code_protector = CodeProtectorProcessor(output_dir)
+    
+    def process(self, input_path, **kwargs):
+        """
+        处理Markdown文件，格式化文本
         
-        # 使用 pangu 处理中英文格式
-        text = pangu.spacing_text(text)  # 自动处理中英文间距
+        Args:
+            input_path: 输入文件路径
+            **kwargs: 额外参数
+                use_protector: 是否使用代码保护器，默认为True
+                
+        Returns:
+            str: 输出文件路径
+        """
+        # 读取文件内容
+        content = self.read_file(input_path)
+        if content is None:
+            return None
+            
+        use_protector = kwargs.get('use_protector', True)
+        
+        # 格式化文本
+        if use_protector:
+            # 保护代码块
+            protected_content = self.code_protector.protect_elements(content)
+            
+            # 格式化文本
+            formatted_content = self._format_text(protected_content)
+            
+            # 恢复代码块
+            content = self.code_protector.restore_elements(formatted_content)
+        else:
+            # 直接格式化文本
+            content = self._format_text(content)
+        
+        # 获取输出路径
+        output_path = self.get_output_path(input_path)
+        
+        # 写入处理后的内容
+        if self.write_file(output_path, content):
+            logging.info(f"已格式化文本: {output_path}")
+            return output_path
+        
+        return None
+    
+    def _format_text(self, text):
+        """
+        格式化文本
+        
+        Args:
+            text: 要格式化的文本
+            
+        Returns:
+            str: 格式化后的文本
+        """
+        # 使用 pangu 处理中英文间距
+        text = pangu.spacing_text(text)
         
         # 处理全角字符转半角
-        text = self.full_to_half(text)
+        text = self._full_to_half(text)
         
         # 处理连续标题问题
-        text = self.handle_consecutive_headers(text)
+        text = self._handle_consecutive_headers(text)
         
-        # 恢复代码块
-        text = self.code_protector.restore_codes(text)
         return text
-
-    def handle_consecutive_headers(self, text):
-        """处理连续的同级标题，将连续3个以上的同级标题转为普通文本"""
+    
+    def _handle_consecutive_headers(self, text):
+        """
+        处理连续的同级标题，将连续3个以上的同级标题转为普通文本
+        
+        Args:
+            text: 要处理的文本
+            
+        Returns:
+            str: 处理后的文本
+        """
         # 处理多行中的连续标题
         lines = text.split('\n')
         result_lines = []
@@ -72,7 +131,7 @@ class TextFormatter:
                         consecutive_headers = [(line, content)]
                 else:
                     # 不是有效的标题行，视为普通文本
-                    if len(consecutive_headers) >= 2:
+                    if len(consecutive_headers) >= 3:
                         result_lines.extend([h[0] for h in consecutive_headers[:2]])
                         result_lines.extend([h[1] for h in consecutive_headers[2:]])
                         logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
@@ -84,7 +143,7 @@ class TextFormatter:
                     consecutive_headers = []
             else:
                 # 不是标题行，处理之前积累的标题
-                if len(consecutive_headers) >= 2:
+                if len(consecutive_headers) >= 3:
                     result_lines.extend([h[0] for h in consecutive_headers[:2]])
                     result_lines.extend([h[1] for h in consecutive_headers[2:]])
                     logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
@@ -164,9 +223,17 @@ class TextFormatter:
         
         logging.info(f"处理完成，文本长度: {len(processed_text)}")
         return processed_text
-
-    def full_to_half(self, text):
-        """全角转半角"""
+    
+    def _full_to_half(self, text):
+        """
+        全角转半角
+        
+        Args:
+            text: 要处理的文本
+            
+        Returns:
+            str: 处理后的文本
+        """
         full_half_map = {
             # '：': ':',
             # '；': ';',
