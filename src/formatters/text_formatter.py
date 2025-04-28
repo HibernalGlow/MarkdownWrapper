@@ -3,9 +3,8 @@
 """
 import re
 import pangu
-from .code_protector import CodeBlockProtector
-from ..utils.logger import logger
-
+from src.formatters.code_protector import CodeBlockProtector
+import logging
 class TextFormatter:
     """文本格式化类，用于格式化Markdown文档"""
     def __init__(self):
@@ -63,7 +62,7 @@ class TextFormatter:
                             result_lines.extend([h[0] for h in consecutive_headers[:2]])
                             # 后面的只保留内容
                             result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                            logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                            logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                         else:
                             # 不足3个，全部保留
                             result_lines.extend([h[0] for h in consecutive_headers])
@@ -76,7 +75,7 @@ class TextFormatter:
                     if len(consecutive_headers) >= 2:
                         result_lines.extend([h[0] for h in consecutive_headers[:2]])
                         result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                        logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                        logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                     else:
                         result_lines.extend([h[0] for h in consecutive_headers])
                     
@@ -88,7 +87,7 @@ class TextFormatter:
                 if len(consecutive_headers) >= 2:
                     result_lines.extend([h[0] for h in consecutive_headers[:2]])
                     result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                    logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                    logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                 else:
                     result_lines.extend([h[0] for h in consecutive_headers])
                 
@@ -101,7 +100,7 @@ class TextFormatter:
         if len(consecutive_headers) >= 3:
             result_lines.extend([h[0] for h in consecutive_headers[:2]])
             result_lines.extend([h[1] for h in consecutive_headers[2:]])
-            logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+            logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
         else:
             result_lines.extend([h[0] for h in consecutive_headers])
         
@@ -147,7 +146,7 @@ class TextFormatter:
             result_lines = processed_text.split('\n')
             
             for line_number, line, positions, level in lines_to_process:
-                logger.info(f"处理行 {line_number+1} 中的 {len(positions)} 个连续 {level} 级标题")
+                logging.info(f"处理行 {line_number+1} 中的 {len(positions)} 个连续 {level} 级标题")
                 
                 # 保持前两个标题不变，修改后续标题
                 new_line = line
@@ -159,11 +158,11 @@ class TextFormatter:
                     new_line = new_line[:start] + new_line[end:]
                 
                 result_lines[line_number] = new_line
-                logger.info("处理单行连续标题，移除了标题标记")
+                logging.info("处理单行连续标题，移除了标题标记")
             
             processed_text = '\n'.join(result_lines)
         
-        logger.info(f"处理完成，文本长度: {len(processed_text)}")
+        logging.info(f"处理完成，文本长度: {len(processed_text)}")
         return processed_text
 
     def full_to_half(self, text):

@@ -1,8 +1,7 @@
 """
 表格处理器模块，处理Markdown表格的格式优化
 """
-from ..utils.logger import logger
-
+import logging
 def remove_empty_table_rows(text):
     """处理表格中的连续空行和首尾空行"""
     lines = text.split('\n')
@@ -38,14 +37,14 @@ def process_table(table_lines):
         return []
     
     original_length = len(table_lines)
-    # logger.info(f"开始处理表格，原始行数: {original_length}")
+    # logging.info(f"开始处理表格，原始行数: {original_length}")
     
     # 移除首尾的空行
     while table_lines and is_empty_table_row(table_lines[0]):
-        # logger.debug("移除表格首部空行")
+        # logging.debug("移除表格首部空行")
         table_lines.pop(0)
     while table_lines and is_empty_table_row(table_lines[-1]):
-        # logger.debug("移除表格尾部空行")
+        # logging.debug("移除表格尾部空行")
         table_lines.pop()
     
     # 处理中间的连续空行和重复行
@@ -63,21 +62,21 @@ def process_table(table_lines):
                 prev_empty = True
             else:
                 removed_empty += 1
-                logger.debug("移除连续空行")
+                logging.debug("移除连续空行")
             continue
         
         # 处理重复行
         if line == prev_line:
             removed_duplicate += 1
-            logger.debug(f"移除重复行: {line}")
+            logging.debug(f"移除重复行: {line}")
             continue
         
         result.append(line)
         prev_line = line
         prev_empty = False
     
-    # logger.info(f"表格处理完成: 移除了 {removed_empty} 个连续空行, {removed_duplicate} 个重复行")
-    # logger.info(f"表格行数变化: {original_length} -> {len(result)}")
+    # logging.info(f"表格处理完成: 移除了 {removed_empty} 个连续空行, {removed_duplicate} 个重复行")
+    # logging.info(f"表格行数变化: {original_length} -> {len(result)}")
     return result
 
 def is_empty_table_row(line):

@@ -3,10 +3,10 @@
 """
 import os
 import time
+import logging
 from colorama import Fore, Style
-from ..utils.logger import logger
-from ..utils.statistics import stats
-from .text_processor import process_text
+from src.utils.statistics import stats
+from src.processors.text_processor import process_text
 
 def process_file(file_path, header_levels=None):
     """处理单个文件"""
@@ -17,7 +17,7 @@ def process_file(file_path, header_levels=None):
         with open(file_path, 'r', encoding='utf-8') as file:
             text = file.read()
         original_length = len(text)
-        logger.info(f"成功读取文件，字符数: {original_length}")
+        logging.info(f"成功读取文件，字符数: {original_length}")
         
         # 处理文本
         start_time = time.time()
@@ -42,7 +42,7 @@ def process_file(file_path, header_levels=None):
         
         return True
     except Exception as e:
-        logger.error(f"处理文件失败: {file_path}", exc_info=True)
+        logging.error(f"处理文件失败: {file_path}", exc_info=True)
         print(f"{Fore.RED}处理失败: {str(e)}{Style.RESET_ALL}")
         return False
 

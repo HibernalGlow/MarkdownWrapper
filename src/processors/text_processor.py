@@ -2,12 +2,11 @@
 文本处理器模块，处理Markdown文本的格式化和内容替换
 """
 import re
-from ..utils.logger import logger
-from ..utils.statistics import stats
-from ..formatters.text_formatter import TextFormatter
-from .table_processor import remove_empty_table_rows
-from .header_processor import extract_and_process_headers, process_headers_by_level
-
+from src.utils.statistics import stats
+from src.formatters.text_formatter import TextFormatter
+from src.processors.table_processor import remove_empty_table_rows
+from src.processors.header_processor import extract_and_process_headers, process_headers_by_level
+import logging
 # 正则表达式替换规则
 patterns_and_replacements = [
     # 1. 基础格式清理
@@ -57,26 +56,26 @@ patterns_and_replacements = [
 
 def process_text(text, header_levels=None):
     """处理文本的核心函数"""
-    logger.info("开始处理文本")
+    logging.info("开始处理文本")
     formatter = TextFormatter()
     
     try:
         # 先进行基础文本格式化
-        logger.info("进行基础文本格式化")
+        logging.info("进行基础文本格式化")
         text = formatter.format_text(text)
         stats.increment_format_changes()
         
         # 提取和处理标题
         text, headers = extract_and_process_headers(text, header_levels)
         if headers:
-            logger.info(f"成功提取{len(headers)}个标题")
+            logging.info(f"成功提取{len(headers)}个标题")
         
         # 处理表格空行和重复行
-        logger.info("处理表格空行和重复行")
+        logging.info("处理表格空行和重复行")
         text = remove_empty_table_rows(text)
         text = formatter.format_text(text)
         # 再应用其他替换规则
-        logger.info("应用替换规则")
+        logging.info("应用替换规则")
         for pattern, replacement in patterns_and_replacements:
             try:
                 if callable(replacement):
@@ -93,9 +92,9 @@ def process_text(text, header_levels=None):
                     if prev_text != text:
                         pattern_name = pattern if isinstance(pattern, str) else "函数替换"
                         stats.add_pattern_match(pattern_name)
-                # logger.debug(f"成功应用替换规则: {pattern}")
+                # logging.debug(f"成功应用替换规则: {pattern}")
             except Exception as e:
-                logger.error(f"应用替换规则失败: {pattern}, 错误: {str(e)}")
+                logging.error(f"应用替换规则失败: {pattern}, 错误: {str(e)}")
                 continue
         
         # 根据用户选择的标题级别处理标题格式化
@@ -104,8 +103,8 @@ def process_text(text, header_levels=None):
         # 更新处理字符数统计
         stats.add_chars_processed(len(text))
         
-        logger.info("文本处理完成")
+        logging.info("文本处理完成")
         return text
     except Exception as e:
-        logger.error(f"处理文本时发生错误: {str(e)}")
+        logging.error(f"处理文本时发生错误: {str(e)}")
         return text  # 返回原文本

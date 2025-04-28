@@ -2,8 +2,7 @@
 代码块保护模块，用于在处理Markdown文件时保护代码块、行内代码和Markdown链接等不被修改
 """
 import re
-from ..utils.logger import logger
-
+import logging
 class CodeBlockProtector:
     """用于保护Markdown中的代码块、行内代码、链接和图片等不被格式化处理"""
     def __init__(self):
@@ -27,31 +26,31 @@ class CodeBlockProtector:
         # 保护代码块
         def save_code_block(match):
             self.code_blocks.append(match.group(0))
-            # logger.debug(f"保护代码块: {match.group(0)[:50]}...")
+            # logging.debug(f"保护代码块: {match.group(0)[:50]}...")
             return f'CODE_BLOCK_{len(self.code_blocks)-1}'
         
         # 保护行内代码
         def save_inline_code(match):
             self.inline_codes.append(match.group(0))
-            # logger.debug(f"保护行内代码: {match.group(0)}")
+            # logging.debug(f"保护行内代码: {match.group(0)}")
             return f'INLINE_CODE_{len(self.inline_codes)-1}'
             
         # 保护 Markdown 图片
         def save_md_image(match):
             self.md_images.append(match.group(0))
-            # logger.debug(f"保护Markdown图片: {match.group(0)[:50]}...")
+            # logging.debug(f"保护Markdown图片: {match.group(0)[:50]}...")
             return f'MD_IMAGE_{len(self.md_images)-1}'
             
         # 保护 Markdown 链接
         def save_md_link(match):
             self.md_links.append(match.group(0))
-            # logger.debug(f"保护Markdown链接: {match.group(0)[:50]}...")
+            # logging.debug(f"保护Markdown链接: {match.group(0)[:50]}...")
             return f'MD_LINK_{len(self.md_links)-1}'
             
         # 保护有序列表
         def save_ordered_list(match):
             self.ordered_lists.append(match.group(0))
-            # logger.debug(f"保护有序列表: {match.group(0)[:50]}...")
+            # logging.debug(f"保护有序列表: {match.group(0)[:50]}...")
             return f'ORDERED_LIST_{len(self.ordered_lists)-1}'
         
         # 顺序很重要：先保护代码块，再保护行内代码，然后保护链接，最后保护有序列表

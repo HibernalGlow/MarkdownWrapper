@@ -8,7 +8,6 @@ import argparse
 import time
 from datetime import datetime
 from colorama import init, Fore, Style
-from nodes.record.logger_config import setup_logger
 from rich.prompt import Prompt, Confirm  # 导入rich提示模块
 
 
@@ -17,10 +16,10 @@ init()
 
 
 # 设置日志
-logger, config_info = setup_logger({
-    'script_name': 'contents_replacer',
-    'console_enabled': True
-})
+# logging, config_info = setup_logging({
+#     'script_name': 'contents_replacer',
+#     'console_enabled': True
+# })
 
 # 添加统计变量
 stats = {
@@ -51,31 +50,31 @@ class CodeBlockProtector:
         # 保护代码块
         def save_code_block(match):
             self.code_blocks.append(match.group(0))
-            logger.debug(f"保护代码块: {match.group(0)[:50]}...")
+            logging.debug(f"保护代码块: {match.group(0)[:50]}...")
             return f'CODE_BLOCK_{len(self.code_blocks)-1}'
         
         # 保护行内代码
         def save_inline_code(match):
             self.inline_codes.append(match.group(0))
-            logger.debug(f"保护行内代码: {match.group(0)}")
+            logging.debug(f"保护行内代码: {match.group(0)}")
             return f'INLINE_CODE_{len(self.inline_codes)-1}'
             
         # 保护 Markdown 图片
         def save_md_image(match):
             self.md_images.append(match.group(0))
-            logger.debug(f"保护Markdown图片: {match.group(0)[:50]}...")
+            logging.debug(f"保护Markdown图片: {match.group(0)[:50]}...")
             return f'MD_IMAGE_{len(self.md_images)-1}'
             
         # 保护 Markdown 链接
         def save_md_link(match):
             self.md_links.append(match.group(0))
-            logger.debug(f"保护Markdown链接: {match.group(0)[:50]}...")
+            logging.debug(f"保护Markdown链接: {match.group(0)[:50]}...")
             return f'MD_LINK_{len(self.md_links)-1}'
             
         # 保护有序列表
         def save_ordered_list(match):
             self.ordered_lists.append(match.group(0))
-            logger.debug(f"保护有序列表: {match.group(0)[:50]}...")
+            logging.debug(f"保护有序列表: {match.group(0)[:50]}...")
             return f'ORDERED_LIST_{len(self.ordered_lists)-1}'
         
         # 顺序很重要：先保护代码块，再保护行内代码，然后保护链接，最后保护有序列表
@@ -160,7 +159,7 @@ class TextFormatter:
                             result_lines.extend([h[0] for h in consecutive_headers[:2]])
                             # 后面的只保留内容
                             result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                            logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                            logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                         else:
                             # 不足3个，全部保留
                             result_lines.extend([h[0] for h in consecutive_headers])
@@ -173,7 +172,7 @@ class TextFormatter:
                     if len(consecutive_headers) >= 2:
                         result_lines.extend([h[0] for h in consecutive_headers[:2]])
                         result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                        logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                        logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                     else:
                         result_lines.extend([h[0] for h in consecutive_headers])
                     
@@ -185,7 +184,7 @@ class TextFormatter:
                 if len(consecutive_headers) >= 2:
                     result_lines.extend([h[0] for h in consecutive_headers[:2]])
                     result_lines.extend([h[1] for h in consecutive_headers[2:]])
-                    logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+                    logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
                 else:
                     result_lines.extend([h[0] for h in consecutive_headers])
                 
@@ -198,7 +197,7 @@ class TextFormatter:
         if len(consecutive_headers) >= 3:
             result_lines.extend([h[0] for h in consecutive_headers[:2]])
             result_lines.extend([h[1] for h in consecutive_headers[2:]])
-            logger.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
+            logging.info(f"转换了 {len(consecutive_headers)-2} 个连续的 {current_level} 级标题为普通文本")
         else:
             result_lines.extend([h[0] for h in consecutive_headers])
         
@@ -244,7 +243,7 @@ class TextFormatter:
             result_lines = processed_text.split('\n')
             
             for line_number, line, positions, level in lines_to_process:
-                logger.info(f"处理行 {line_number+1} 中的 {len(positions)} 个连续 {level} 级标题")
+                logging.info(f"处理行 {line_number+1} 中的 {len(positions)} 个连续 {level} 级标题")
                 
                 # 保持前两个标题不变，修改后续标题
                 new_line = line
@@ -256,11 +255,11 @@ class TextFormatter:
                     new_line = new_line[:start] + new_line[end:]
                 
                 result_lines[line_number] = new_line
-                logger.info("处理单行连续标题，移除了标题标记")
+                logging.info("处理单行连续标题，移除了标题标记")
             
             processed_text = '\n'.join(result_lines)
         
-        logger.info(f"处理完成，文本长度: {len(processed_text)}")
+        logging.info(f"处理完成，文本长度: {len(processed_text)}")
         return processed_text    
     def full_to_half(self, text):
         """全角转半角"""
@@ -327,7 +326,7 @@ def convert_number(match, format_type):
                 'number_subtitle': f'###### {number}. '
             }
             result = formats.get(format_type)
-            logger.info(f"转换数字标题成功: {match.group(0)} -> {result}")
+            logging.info(f"转换数字标题成功: {match.group(0)} -> {result}")
             return result
             
         # 处理中文数字的情况
@@ -337,7 +336,7 @@ def convert_number(match, format_type):
         if chinese_num in special_chars:
             chinese_num = special_chars[chinese_num]
             
-        logger.debug(f"尝试转换数字: {chinese_num}")
+        logging.debug(f"尝试转换数字: {chinese_num}")
         arabic_num = cn2an.cn2an(chinese_num, mode='smart')
         standard_chinese = cn2an.an2cn(arabic_num)
         
@@ -348,10 +347,10 @@ def convert_number(match, format_type):
             'subsubsection': f'#### ({standard_chinese}) '
         }
         result = formats.get(format_type, match.group(0))
-        logger.info(f"转换标题成功: {match.group(0)} -> {result}")
+        logging.info(f"转换标题成功: {match.group(0)} -> {result}")
         return result
     except Exception as e:
-        logger.error(f"转换标题失败: {match.group(0)}, 错误: {str(e)}")
+        logging.error(f"转换标题失败: {match.group(0)}, 错误: {str(e)}")
         # 如果转换失败，保持原样
         return match.group(0)
 
@@ -436,14 +435,14 @@ def process_table(table_lines):
         return []
     
     original_length = len(table_lines)
-    logger.info(f"开始处理表格，原始行数: {original_length}")
+    logging.info(f"开始处理表格，原始行数: {original_length}")
     
     # 移除首尾的空行
     while table_lines and is_empty_table_row(table_lines[0]):
-        logger.debug("移除表格首部空行")
+        logging.debug("移除表格首部空行")
         table_lines.pop(0)
     while table_lines and is_empty_table_row(table_lines[-1]):
-        logger.debug("移除表格尾部空行")
+        logging.debug("移除表格尾部空行")
         table_lines.pop()
     
     # 处理中间的连续空行和重复行
@@ -461,21 +460,21 @@ def process_table(table_lines):
                 prev_empty = True
             else:
                 removed_empty += 1
-                logger.debug("移除连续空行")
+                logging.debug("移除连续空行")
             continue
         
         # 处理重复行
         if line == prev_line:
             removed_duplicate += 1
-            logger.debug(f"移除重复行: {line}")
+            logging.debug(f"移除重复行: {line}")
             continue
         
         result.append(line)
         prev_line = line
         prev_empty = False
     
-    logger.info(f"表格处理完成: 移除了 {removed_empty} 个连续空行, {removed_duplicate} 个重复行")
-    logger.info(f"表格行数变化: {original_length} -> {len(result)}")
+    logging.info(f"表格处理完成: 移除了 {removed_empty} 个连续空行, {removed_duplicate} 个重复行")
+    logging.info(f"表格行数变化: {original_length} -> {len(result)}")
     return result
 
 def is_empty_table_row(line):
@@ -502,7 +501,7 @@ def extract_and_process_headers(text, header_levels=None):
     if header_levels is None:
         header_levels = [1, 2, 3, 4, 5, 6]
     
-    logger.info(f"提取标题，处理级别: {header_levels}")
+    logging.info(f"提取标题，处理级别: {header_levels}")
     
     lines = text.split('\n')
     headers = []
@@ -521,9 +520,9 @@ def extract_and_process_headers(text, header_levels=None):
                 if level in header_levels:
                     header_text = line[level+1:].strip()
                     headers.append((level, header_text, line_num))
-                    logger.debug(f"找到{level}级标题: {header_text}")
+                    logging.debug(f"找到{level}级标题: {header_text}")
     
-    logger.info(f"共提取了 {len(headers)} 个标题")
+    logging.info(f"共提取了 {len(headers)} 个标题")
     return text, headers
 
 def process_headers_by_level(text, header_levels=None):
@@ -541,7 +540,7 @@ def process_headers_by_level(text, header_levels=None):
     if header_levels is None:
         header_levels = [1, 2, 3, 4, 5, 6]
     
-    logger.info(f"处理标题格式化，级别: {header_levels}")
+    logging.info(f"处理标题格式化，级别: {header_levels}")
     
     # 标题级别与相应的正则表达式映射
     header_patterns_by_level = {
@@ -564,15 +563,15 @@ def process_headers_by_level(text, header_levels=None):
                     if prev_text != text:
                         pattern_name = f"Level{level}_{pattern[:20]}..." if isinstance(pattern, str) else f"Level{level}_函数替换"
                         stats["pattern_matches"][pattern_name] = stats["pattern_matches"].get(pattern_name, 0) + 1
-                        logger.info(f"应用 {level} 级标题替换规则: {pattern}")
+                        logging.info(f"应用 {level} 级标题替换规则: {pattern}")
                 except Exception as e:
-                    logger.error(f"应用 {level} 级标题替换规则失败: {pattern}, 错误: {str(e)}")
+                    logging.error(f"应用 {level} 级标题替换规则失败: {pattern}, 错误: {str(e)}")
     
     return text
 
 def process_text(text, patterns_and_replacements):
     """处理文本的核心函数"""
-    logger.info("开始处理文本")
+    logging.info("开始处理文本")
     formatter = TextFormatter()
     
     try:
@@ -604,35 +603,35 @@ def process_text(text, patterns_and_replacements):
                     
                     if not header_levels:
                         header_levels = [1, 2, 3, 4, 5, 6]
-                        logger.warning("无效的标题级别输入，使用默认值[1-6]")
+                        logging.warning("无效的标题级别输入，使用默认值[1-6]")
                     else:
-                        logger.info(f"将处理标题级别: {header_levels}")
+                        logging.info(f"将处理标题级别: {header_levels}")
                 except ValueError:
                     header_levels = [1, 2, 3, 4, 5, 6]
-                    logger.warning(f"无法解析输入 '{header_levels_input}'，使用默认值[1-6]")
+                    logging.warning(f"无法解析输入 '{header_levels_input}'，使用默认值[1-6]")
             else:
                 header_levels = [1, 2, 3, 4, 5, 6]
         except Exception as e:
             header_levels = [1, 2, 3, 4, 5, 6]
-            logger.error(f"询问标题级别时出错: {str(e)}，使用默认值[1-6]")
+            logging.error(f"询问标题级别时出错: {str(e)}，使用默认值[1-6]")
         
         # 先进行基础文本格式化
-        logger.info("进行基础文本格式化")
+        logging.info("进行基础文本格式化")
         text = formatter.format_text(text)
         stats["format_changes"] += 1
         
         # 提取和处理标题
         text, headers = extract_and_process_headers(text, header_levels)
         if headers:
-            logger.info(f"成功提取{len(headers)}个标题")
+            logging.info(f"成功提取{len(headers)}个标题")
             # 这里可以添加更多对标题的处理逻辑
         
         # 处理表格空行和重复行
-        logger.info("处理表格空行和重复行")
+        logging.info("处理表格空行和重复行")
         text = remove_empty_table_rows(text)
         
         # 再应用其他替换规则
-        logger.info("应用替换规则")
+        logging.info("应用替换规则")
         for pattern, replacement in patterns_and_replacements:
             try:
                 if callable(replacement):
@@ -649,18 +648,18 @@ def process_text(text, patterns_and_replacements):
                     if prev_text != text:
                         pattern_name = pattern if isinstance(pattern, str) else "函数替换"
                         stats["pattern_matches"][pattern_name] = stats["pattern_matches"].get(pattern_name, 0) + 1
-                logger.debug(f"成功应用替换规则: {pattern}")
+                logging.debug(f"成功应用替换规则: {pattern}")
             except Exception as e:
-                logger.error(f"应用替换规则失败: {pattern}, 错误: {str(e)}")
+                logging.error(f"应用替换规则失败: {pattern}, 错误: {str(e)}")
                 continue
         
         # 根据用户选择的标题级别处理标题格式化
         text = process_headers_by_level(text, header_levels)
         
-        logger.info("文本处理完成")
+        logging.info("文本处理完成")
         return text
     except Exception as e:
-        logger.error(f"处理文本时发生错误: {str(e)}")
+        logging.error(f"处理文本时发生错误: {str(e)}")
         return text  # 返回原文本
 
 def process_file(file_path):
@@ -672,7 +671,7 @@ def process_file(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             text = file.read()
         original_length = len(text)
-        logger.info(f"成功读取文件，字符数: {original_length}")
+        logging.info(f"成功读取文件，字符数: {original_length}")
         
         # 处理文本
         start_time = time.time()
@@ -698,7 +697,7 @@ def process_file(file_path):
         
         return True
     except Exception as e:
-        logger.error(f"处理文件失败: {file_path}", exc_info=True)
+        logging.error(f"处理文件失败: {file_path}", exc_info=True)
         print(f"{Fore.RED}处理失败: {str(e)}{Style.RESET_ALL}")
         return False
 
@@ -798,7 +797,7 @@ def main():
                 print(f"处理字符数: {stats['total_chars_processed']}")
         
     except Exception as e:
-        logger.error(f"主程序执行失败: {str(e)}", exc_info=True)
+        logging.error(f"主程序执行失败: {str(e)}", exc_info=True)
         print(f"{Fore.RED}执行失败: {str(e)}{Style.RESET_ALL}")
 
 if __name__ == '__main__':

@@ -11,13 +11,12 @@ from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
 from rich.table import Table
-
+import logging
 # 初始化 colorama
 init()
 
 # 导入项目模块
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from src.utils.logger import logger
 from src.utils.statistics import stats
 from src.processors.file_processor import process_file, process_directory
 
@@ -47,12 +46,12 @@ def parse_header_levels(header_levels_input):
         header_levels = sorted(set(header_levels))
         
         if not header_levels:
-            logger.warning("无效的标题级别输入，使用默认值[1-6]")
+            logging.warning("无效的标题级别输入，使用默认值[1-6]")
             return list(range(1, 7))
         else:
             return header_levels
     except ValueError:
-        logger.warning(f"无法解析输入 '{header_levels_input}'，使用默认值[1-6]")
+        logging.warning(f"无法解析输入 '{header_levels_input}'，使用默认值[1-6]")
         return list(range(1, 7))
 
 def display_welcome_message():
@@ -133,7 +132,7 @@ def process_with_progress(file_path, header_levels):
         return True
     except Exception as e:
         console.print(f"[red]✗ 处理失败: {str(e)}[/red]")
-        logger.error(f"处理文件失败: {file_path}", exc_info=True)
+        logging.error(f"处理文件失败: {file_path}", exc_info=True)
         return False
 
 def main():
@@ -251,7 +250,7 @@ def main():
         display_statistics()
         
     except Exception as e:
-        logger.error(f"主程序执行失败: {str(e)}", exc_info=True)
+        logging.error(f"主程序执行失败: {str(e)}", exc_info=True)
         console.print(f"[bold red]执行失败: {str(e)}[/bold red]")
         import traceback
         console.print(traceback.format_exc())

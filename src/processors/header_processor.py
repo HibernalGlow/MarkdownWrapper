@@ -2,9 +2,9 @@
 标题处理器模块，用于提取和处理Markdown文档中的标题
 """
 import re
-from ..utils.logger import logger
-from ..utils.statistics import stats
-from ..formatters.number_converter import convert_number
+from src.utils.statistics import stats
+from  src.formatters.number_converter import convert_number
+import logging
 
 def extract_and_process_headers(text, header_levels=None):
     """
@@ -22,7 +22,7 @@ def extract_and_process_headers(text, header_levels=None):
     if header_levels is None:
         header_levels = [1, 2, 3, 4, 5, 6]
     
-    logger.info(f"提取标题，处理级别: {header_levels}")
+    logging.info(f"提取标题，处理级别: {header_levels}")
     
     lines = text.split('\n')
     headers = []
@@ -41,9 +41,9 @@ def extract_and_process_headers(text, header_levels=None):
                 if level in header_levels:
                     header_text = line[level+1:].strip()
                     headers.append((level, header_text, line_num))
-                    logger.debug(f"找到{level}级标题: {header_text}")
+                    logging.debug(f"找到{level}级标题: {header_text}")
     
-    logger.info(f"共提取了 {len(headers)} 个标题")
+    logging.info(f"共提取了 {len(headers)} 个标题")
     return text, headers
 
 def process_headers_by_level(text, header_levels=None):
@@ -61,7 +61,7 @@ def process_headers_by_level(text, header_levels=None):
     if header_levels is None:
         header_levels = [1, 2, 3, 4, 5, 6]
     
-    logger.info(f"处理标题格式化，级别: {header_levels}")
+    logging.info(f"处理标题格式化，级别: {header_levels}")
     
     # 标题级别与相应的正则表达式映射
     header_patterns_by_level = {
@@ -84,8 +84,8 @@ def process_headers_by_level(text, header_levels=None):
                     if prev_text != text:
                         pattern_name = f"Level{level}_{pattern[:20]}..." if isinstance(pattern, str) else f"Level{level}_函数替换"
                         stats.add_pattern_match(pattern_name)
-                        # logger.info(f"应用 {level} 级标题替换规则: {pattern}")
+                        # logging.info(f"应用 {level} 级标题替换规则: {pattern}")
                 except Exception as e:
-                    logger.error(f"应用 {level} 级标题替换规则失败: {pattern}, 错误: {str(e)}")
+                    logging.error(f"应用 {level} 级标题替换规则失败: {pattern}, 错误: {str(e)}")
     
     return text

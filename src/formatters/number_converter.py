@@ -2,8 +2,8 @@
 数字转换模块，处理中文数字和阿拉伯数字的相互转换
 """
 import cn2an
-from ..utils.logger import logger
-from ..utils.statistics import stats
+from src.utils.statistics import stats
+import logging
 
 def convert_number(match, format_type):
     """
@@ -25,7 +25,7 @@ def convert_number(match, format_type):
                 'number_subtitle': f'###### {number}. '
             }
             result = formats.get(format_type)
-            # logger.info(f"转换数字标题成功: {match.group(0)} -> {result}")
+            # logging.info(f"转换数字标题成功: {match.group(0)} -> {result}")
             return result
             
         # 处理中文数字的情况
@@ -35,7 +35,7 @@ def convert_number(match, format_type):
         if chinese_num in special_chars:
             chinese_num = special_chars[chinese_num]
             
-        # logger.debug(f"尝试转换数字: {chinese_num}")
+        # logging.debug(f"尝试转换数字: {chinese_num}")
         arabic_num = cn2an.cn2an(chinese_num, mode='smart')
         standard_chinese = cn2an.an2cn(arabic_num)
         
@@ -46,9 +46,9 @@ def convert_number(match, format_type):
             'subsubsection': f'#### ({standard_chinese}) '
         }
         result = formats.get(format_type, match.group(0))
-        # logger.info(f"转换标题成功: {match.group(0)} -> {result}")
+        # logging.info(f"转换标题成功: {match.group(0)} -> {result}")
         return result
     except Exception as e:
-        logger.error(f"转换标题失败: {match.group(0)}, 错误: {str(e)}")
+        logging.error(f"转换标题失败: {match.group(0)}, 错误: {str(e)}")
         # 如果转换失败，保持原样
         return match.group(0)
