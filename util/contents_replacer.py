@@ -111,7 +111,7 @@ class TextFormatter:
     def format_text(self, text):
         """格式化文本：处理中英文间距、标点符号等"""
         # 保护代码块
-        text = self.code_protector.protect_codes(text)
+        # text = self.code_protector.protect_codes(text)
         
         # 使用 pangu 处理中英文格式
         text = pangu.spacing_text(text)  # 自动处理中英文间距
@@ -123,7 +123,7 @@ class TextFormatter:
         text = self.handle_consecutive_headers(text)
         
         # 恢复代码块
-        text = self.code_protector.restore_codes(text)
+        # text = self.code_protector.restore_codes(text)
         return text
     def handle_consecutive_headers(self, text):
         """处理连续的同级标题，将连续3个以上的同级标题转为普通文本"""
