@@ -114,13 +114,13 @@ class TextFormatter:
         # text = self.code_protector.protect_codes(text)
         
         # 使用 pangu 处理中英文格式
-        text = pangu.spacing_text(text)  # 自动处理中英文间距
+        # text = pangu.spacing_text(text)  # 自动处理中英文间距
         
         # 处理全角字符转半角
-        text = self.full_to_half(text)
+        # text = self.full_to_half(text)
         
-        # 处理连续标题问题
-        text = self.handle_consecutive_headers(text)
+        # # 处理连续标题问题
+        # text = self.handle_consecutive_headers(text)
         
         # 恢复代码块
         # text = self.code_protector.restore_codes(text)
