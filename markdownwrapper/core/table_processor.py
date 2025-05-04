@@ -2,8 +2,8 @@
 表格处理器模块，用于处理Markdown文档中的表格格式化
 """
 import logging
-from src.core.base_processor import BaseProcessor
-from src.core.code_protector import CodeProtectorProcessor
+from markdownwrapper.core.base_processor import BaseProcessor
+from markdownwrapper.core.code_protector import CodeProtectorProcessor
 
 class TableProcessor(BaseProcessor):
     """表格处理器，用于处理Markdown表格格式"""

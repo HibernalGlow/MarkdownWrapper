@@ -4,8 +4,8 @@
 import re
 import pangu
 import logging
-from src.core.base_processor import BaseProcessor
-from src.core.code_protector import CodeProtectorProcessor
+from markdownwrapper.core.base_processor import BaseProcessor
+from markdownwrapper.core.code_protector import CodeProtectorProcessor
 
 class TextFormatterProcessor(BaseProcessor):
     """文本格式化处理器"""

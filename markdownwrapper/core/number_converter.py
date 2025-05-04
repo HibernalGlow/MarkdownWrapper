@@ -3,8 +3,8 @@
 """
 import cn2an
 import logging
-from src.core.base_processor import BaseProcessor
-from src.core.code_protector import CodeProtectorProcessor
+from markdownwrapper.core.base_processor import BaseProcessor
+from markdownwrapper.core.code_protector import CodeProtectorProcessor
 import re
 
 class NumberConverterProcessor(BaseProcessor):

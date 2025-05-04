@@ -3,7 +3,7 @@
 """
 import re
 import logging
-from src.core.base_processor import BaseProcessor
+from markdownwrapper.core.base_processor import BaseProcessor
 
 class CodeProtectorProcessor(BaseProcessor):
     """代码块保护器处理器"""
