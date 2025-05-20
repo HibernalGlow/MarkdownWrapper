@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "一个Markdown格式化工具"
 readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
 authors = [
     { name = "Your Name", email = "you@example.com" }, # 请替换为您的信息
 ]
@@ -13,14 +14,16 @@ dependencies = [
     "rich>=14.0.0",
     "colorama>=0.4.4",
     "pyperclip>=1.8.2",
-    "lxml>=4.9.1", # 如果 markdownwrapper.core.markdown_processor 依赖 lxml
+    "lxml>=4.9.1",
+    "marko>=1.2.0",
+    "cn2an>=0.5.19",
+    "loguru>=0.7.0",
 ]
 
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License", # 确保与上面的 license 一致
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -35,6 +38,7 @@ Repository = "https://github.com/yourusername/markdownwrapper" # 请替换为您
 
 [project.scripts]
 markdownwrapper = "markdownwrapper.__main__:main"
+mko = "mko.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
