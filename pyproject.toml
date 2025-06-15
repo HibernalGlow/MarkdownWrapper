@@ -39,7 +39,7 @@ Repository = "https://github.com/yourusername/markdownwrapper" # 请替换为您
 [project.scripts]
 markdownwrapper = "markdownwrapper.__main__:main"
 mko = "mko.__main__:main"
-
+t2list = "utildown.t2list:main"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
