@@ -18,6 +18,7 @@ dependencies = [
     "marko>=1.2.0",
     "cn2an>=0.5.19",
     "loguru>=0.7.0",
+    "pangu>=4.0.6.1",
 ]
 
 classifiers = [

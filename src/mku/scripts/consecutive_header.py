@@ -238,10 +238,9 @@ def main():
         title="[yellow]欢迎[/yellow]",
         expand=False
     ))
+    path = Path(__file__).parent 
+    input_path_str = Prompt.ask("请输入 Markdown 文件路径或包含 .md 文件的目录路径", default=str(path))
 
-    # 交互式获取输入
-    input_path_str = Prompt.ask("请输入 Markdown 文件路径或包含 .md 文件的目录路径")
-    
     output_path_str = Prompt.ask(
         "请输入输出文件或目录的路径 (可选，如果留空：输入为文件则覆盖，输入为目录则在原位修改)",
         default=None,

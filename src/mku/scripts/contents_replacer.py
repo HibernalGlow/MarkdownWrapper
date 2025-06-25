@@ -22,6 +22,7 @@ init()
 # })
 
 # 添加统计变量
+
 stats = {
     "processed_files": 0,
     "total_chars_processed": 0,
