@@ -313,7 +313,7 @@ def main():
     
     # 构建输出文件名
     base_name, ext = os.path.splitext(file_path)
-    output_file = f"{base_name}_processed{ext}"
+    output_file = f"{base_name}{ext}"
     
     # 使用进度指示器写入结果到新文件
     with Progress(

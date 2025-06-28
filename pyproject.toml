@@ -16,6 +16,7 @@ dependencies = [
     "pyperclip>=1.8.2",
     "lxml>=4.9.1",
     "marko>=1.2.0",
+    "mistune>=3.0.0",
     "cn2an>=0.5.19",
     "loguru>=0.7.0",
     "pangu>=4.0.6.1",
@@ -40,7 +41,14 @@ Repository = "https://github.com/yourusername/markdownwrapper" # 请替换为您
 [project.scripts]
 markdownwrapper = "markdownwrapper.__main__:main"
 mko = "mko.__main__:main"
-t2list = "marku.tool.t2list:main"
+t2list = "marku.scripts.t2list:main"
+mistune-t2list = "markdownwrapper.scripts.mistune.t2list:main"
+mistune-consecutive-header = "markdownwrapper.scripts.mistune.consecutive_header:main"
+mistune-content-dedup = "markdownwrapper.scripts.mistune.content_dedup:main"
+mistune-html2sy-table = "markdownwrapper.scripts.mistune.html2sy_table:main"
+mistune-image-path-replacer = "markdownwrapper.scripts.mistune.image_path_replacer:main"
+mistune-single-orderlist-remover = "markdownwrapper.scripts.mistune.single_orderlist_remover:main"
+mistune-test = "markdownwrapper.scripts.mistune.test_mistune_scripts:main"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

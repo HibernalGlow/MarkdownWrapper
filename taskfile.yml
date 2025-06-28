@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  md:
+    desc: 顺序执行 src/marku/scripts 下的所有 Python 脚本
+    dir: src/marku/scripts
+    cmds:
+      - python html2sy_table.py
+      - python contents_replacer.py
+      - python content_dedup.py
+      - python consecutive_header.py
+      # - python image_path_replacer.py
+      - python single_orderlist_remover.py
+      # - python t2list.py
+    silent: false

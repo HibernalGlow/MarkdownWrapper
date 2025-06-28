@@ -802,5 +802,5 @@ def main():
         print(f"{Fore.RED}执行失败: {str(e)}{Style.RESET_ALL}")
 
 if __name__ == '__main__':
-    print(f"{Fore.CYAN}===== Markdown 格式化工具 ====={Style.RESET_ALL}")
+    print(f"{Fore.CYAN}===== Markdown 格式化工具（记得处理标题和目录） ====={Style.RESET_ALL}")
     main()
