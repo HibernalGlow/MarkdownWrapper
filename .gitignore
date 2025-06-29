@@ -176,3 +176,4 @@ cython_debug/
 *.md
 1.md
 /src/marku/test/1.json
+/.roo
