@@ -1,0 +1,55 @@
+{
+  "root": "D:\\1VSCODE\\Projects\\MarkdownAll\\MarkdownWrapper",
+  "dry_run": true,
+  "steps": [
+    {
+      "name": "clean-headers",
+      "module": "consecutive_header",
+      "order": 10,
+      "error": null,
+      "data": {
+        "files": 1,
+        "changed": 0,
+        "diffs": []
+      },
+      "elapsed": 0.0185
+    },
+    {
+      "name": "dedup",
+      "module": "content_dedup",
+      "order": 20,
+      "error": null,
+      "data": {
+        "files": 1,
+        "changed": 0,
+        "diffs": []
+      },
+      "elapsed": 0.0
+    },
+    {
+      "name": "tables",
+      "module": "html2sy_table",
+      "order": 30,
+      "error": null,
+      "data": {
+        "files": 1,
+        "tables": 0,
+        "diffs": []
+      },
+      "elapsed": 0.0
+    },
+    {
+      "name": "single-olist",
+      "module": "single_orderlist_remover",
+      "order": 40,
+      "error": null,
+      "data": {
+        "files": 1,
+        "changed": 0,
+        "diffs": []
+      },
+      "elapsed": 0.001
+    }
+  ],
+  "elapsed": 0.022
+}

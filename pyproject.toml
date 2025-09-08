@@ -1,0 +1,68 @@
+[project]
+name = "markdownwrapper"
+version = "0.1.0"
+description = "一个Markdown格式化工具"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    { name = "Your Name", email = "you@example.com" }, # 请替换为您的信息
+]
+keywords = ["markdown", "formatter", "cli", "text processing"]
+
+dependencies = [
+    "rich>=14.0.0",
+    "colorama>=0.4.4",
+    "pyperclip>=1.8.2",
+    "lxml>=4.9.1",
+    "marko>=1.2.0",
+    "mistune>=3.0.0",
+    "cn2an>=0.5.19",
+    "loguru>=0.7.0",
+    "pangu>=4.0.6.1",
+    "panflute>=2.3.1",
+    "typer>=0.12.3",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/markdownwrapper" # 请替换为您的项目地址
+Repository = "https://github.com/yourusername/markdownwrapper" # 请替换为您的项目地址
+
+[project.scripts]
+markdownwrapper = "markdownwrapper.__main__:main"
+t2list = "marku.scripts.t2list:main"
+marku-pipeline = "marku.pipeline_main:main"
+marku = "marku.cli:app"
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# 可选：工具特定配置
+# [tool.setuptools.packages.find]
+# where = ["."]  # 查找包的根目录，如果你的包在 src 目录下，则为 ["src"]
+# include = ["markdownwrapper*"] # 要包含的包
+# exclude = ["tests*"] # 要排除的包
+
+# [tool.pytest.ini_options]
+# minversion = "6.0"
+# addopts = "-ra -q"
+# testpaths = [
+#     "tests",
+# ]
+
+# [tool.ruff]
+# line-length = 88
+# select = ["E", "W", "F", "I", "UP", "C4", "B", "A", "RUF"]
+# ignore = []

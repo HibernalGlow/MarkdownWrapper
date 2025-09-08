@@ -1,0 +1,84 @@
+[pipeline]
+enable = true
+root = "./"   # 根目录，用于相对路径解析
+# sequence: 使用单独列表统一控制顺序（若存在，将优先于每步的 order 值；依赖冲突仍按依赖拓扑调整）
+sequence = [
+	"content-replace",
+	"title-convert",
+	"consecutive_header",
+	"dedup",
+	"tables",
+	"single-olist",
+	"t2list",
+	"image-path",
+]
+
+# 现在 module 字段可直接使用核心注册名 (见 registry)，并支持顺序控制：
+# order: 数值 (小优先)；after / before / depends：依赖拓扑排序
+
+[[step]]
+name = "consecutive_header"
+module = "consecutive_header"  # 使用核心注册名或适配器名
+enabled = true
+order = 10
+skip_on_error = true
+[step.config]
+min_consecutive_headers = 2
+processing_mode = 2 # 1: 保留第一个，2: 保留最后一个, 3: 合并为一个
+
+[[step]]
+name = "dedup"
+module = "content_dedup"
+enabled = false
+order = 20
+[step.config]
+dedup_titles = true
+dedup_images = false
+title_levels = [1,2,3,4,5,6]
+
+[[step]]
+name = "tables"
+module = "html2sy_table"
+enabled = true
+depends = ["dedup"]  # 仍需保留真实依赖
+order = 30
+[step.config]
+
+[[step]]
+name = "single-olist"
+module = "single_orderlist_remover"
+enabled = true
+order = 40
+
+[[step]]
+name = "content-replace"
+module = "content_replace"
+enabled = true
+order = 45
+[step.config]
+verbose = true
+
+[[step]]
+name = "title-convert"
+module = "title_convert"
+enabled = true
+order = 47
+[step.config]
+prompt_levels = false
+levels = [1,2,3,4,5,6]
+
+[[step]]
+name = "t2list"
+module = "t2list"
+enabled = false  # 默认关闭，可在需要时开启
+order = 50
+
+[[step]]
+name = "image-path"
+module = "image_path_replacer"
+enabled = false
+order = 60
+[step.config]
+relative_pattern = "images/"
+base_url = "https://example.com/assets/"
+
