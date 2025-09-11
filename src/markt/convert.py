@@ -19,9 +19,10 @@ def headings_to_list(
     *,
     bullet: str = "- ",
     max_heading: int = 6,
-    indent_size: int = 2,
+    indent_size: int = 4,
     ordered: bool = False,
     ordered_marker: str = ".",
+    max_list_depth: int | None = None,
 ) -> str:
     """将 # 标题转为列表。
 
@@ -40,9 +41,15 @@ def headings_to_list(
             continue
         m = _HEADING_RE.match(ln)
         if m:
-            level = min(len(m.group(1)), max_heading)
+            level = len(m.group(1))
+            # 删除超出标题限制
+            if level > max_heading:
+                continue
             text = m.group(2).strip()
             indent = " " * indent_size * (level - 1)
+            # 删除超出列表层级限制（顶层记为1）
+            if max_list_depth is not None and level > max_list_depth:
+                continue
             if ordered:
                 # 更新计数器：当前级别+1，清除更深层
                 counters[level] = counters.get(level, 0) + 1
@@ -65,6 +72,7 @@ def list_to_headings(
     start_level: int = 1,
     max_level: int = 6,
     indent_size: int = 2,
+    max_list_depth: int | None = None,
 ) -> str:
     """将有序/无序列表按缩进推断为标题。
 
@@ -84,7 +92,14 @@ def list_to_headings(
             indent = m.group("indent")
             text = m.group("text").strip()
             depth = len(indent) // indent_size
-            level = max(1, min(max_level, start_level + depth))
+            # 列表层级限制（顶层=1 => depth+1）
+            if max_list_depth is not None and (depth + 1) > max_list_depth:
+                continue
+            level = start_level + depth
+            # 删除超出标题限制
+            if level > max_level:
+                continue
+            level = max(1, min(6, level))
             out.append("#" * level + " " + text)
         else:
             out.append(ln)

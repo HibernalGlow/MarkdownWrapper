@@ -11,12 +11,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=["h2l", "l2h"], default="h2l", help="h2l=标题→列表, l2h=列表→标题")
     parser.add_argument("-i", "--input", help="输入文件(省略或为 '-' 则读标准输入)")
     parser.add_argument("-o", "--output", help="输出文件(省略则写到标准输出)")
-    parser.add_argument("--indent", type=int, default=2, help="每级缩进空格数 (默认2)")
+    parser.add_argument("--indent", type=int, default=4, help="每级缩进空格数 (默认2)")
     # 标题→列表
     parser.add_argument("--bullet", default="- ", choices=["- ", "* ", "+ "], help="无序列表标记")
     parser.add_argument("--ordered", action="store_true", help="使用有序列表 (标题→列表)")
     parser.add_argument("--ordered-marker", default=".", choices=[".", ")"], help="有序编号样式")
     parser.add_argument("--max-heading", type=int, default=6, help="最大处理标题级别 1-6 (标题→列表)")
+    parser.add_argument("--max-list-depth", type=int, default=0, help="最大列表层级(0=不限) 用于两种模式")
     # 列表→标题
     parser.add_argument("--start-level", type=int, default=1, help="顶层映射到的标题级别 1-6 (列表→标题)")
     parser.add_argument("--max-level", type=int, default=6, help="最大标题级别 1-6 (列表→标题)")
@@ -36,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
             indent_size=max(1, int(args.indent)),
             ordered=bool(args.ordered),
             ordered_marker=args.ordered_marker,
+            max_list_depth=(int(args.max_list_depth) if int(args.max_list_depth) > 0 else None),
         )
     else:
         # l2h
@@ -44,6 +46,7 @@ def main(argv: list[str] | None = None) -> int:
             start_level=max(1, min(6, int(args.start_level))),
             max_level=max(1, min(6, int(args.max_level))),
             indent_size=max(1, int(args.indent)),
+            max_list_depth=(int(args.max_list_depth) if int(args.max_list_depth) > 0 else None),
         )
 
     if args.output:
