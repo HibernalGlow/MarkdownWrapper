@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 def _convert(text: str) -> str:
@@ -72,3 +73,11 @@ class T2ListModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[t2list] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = T2ListModule()
+    mod.run(context, config)
+    return {"ok": True}

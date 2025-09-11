@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 @dataclass
@@ -46,6 +47,14 @@ class ConsecutiveHeaderModule(BaseModule):
             processed += 1
         print(f"[consecutive_header] files={processed} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": processed, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = ConsecutiveHeaderModule()
+    mod.run(context, config)
+    return {"ok": True}
 
     def _get_header(self, line: str) -> Optional[Tuple[int, str]]:
         s = line.strip()

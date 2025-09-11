@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 class ImagePathModule(BaseModule):
@@ -41,3 +42,11 @@ class ImagePathModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[image_path_replacer] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = ImagePathModule()
+    mod.run(context, config)
+    return {"ok": True}

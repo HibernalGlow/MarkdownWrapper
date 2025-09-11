@@ -131,6 +131,12 @@ class PipelineExecutor:
             except Exception:  # pragma: no cover
                 self.use_rich = False
                 self._console = None
+        # 初始化插件系统（pluggy），保持向后兼容
+        try:
+            from .core.plugins import initialize_plugins
+            initialize_plugins()
+        except Exception:
+            pass
 
     def _print(self, msg: str):  # 简化输出
         if self.use_rich and self._console:
@@ -285,10 +291,27 @@ class PipelineExecutor:
                 self._print(f"[marku.pipeline] 写报告失败: {e}")
 
     def _instantiate(self, step: StepConfig):
-        # 允许使用核心注册表中的名称
+        # 优先：使用 pluggy 插件注册表（初始化已在 __init__ 完成）
+        try:
+            from .core.plugins import plugin_registry
+            if plugin_registry.has_plugin(step.module) and not step.clazz:
+                # 返回一个轻量 Runner 适配器，保持与旧代码一致的 .run(config) 调用方式
+                class _PluginRunner:
+                    def __init__(self, name: str):
+                        self.name = name
+                    def run(self, context, config):
+                        # 为插件注入 dry_run 语义（保持与遗留模块一致）
+                        cfg = dict(config or {})
+                        if "__dry_run" in context.shared:
+                            cfg.setdefault("dry_run", True)
+                        return plugin_registry.call_plugin(self.name, context, cfg)
+                return _PluginRunner(step.module)
+        except Exception:
+            pass
+        # 兼容：使用旧的核心注册表（直接类映射）
         try:
             from .core.registry import create, REGISTRY  # 延迟导入
-            if step.module in REGISTRY and not step.clazz:
+            if isinstance(REGISTRY, dict) and step.module in REGISTRY and not step.clazz:
                 return create(step.module)
         except Exception:
             pass

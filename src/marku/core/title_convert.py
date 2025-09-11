@@ -16,6 +16,7 @@ import re
 import cn2an
 
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 def _convert_number(m, kind: str):
     if kind in ('number_title','number_subtitle'):
@@ -91,3 +92,11 @@ class TitleNormalizeModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[title_convert] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = TitleNormalizeModule()
+    mod.run(context, config)
+    return {"ok": True}

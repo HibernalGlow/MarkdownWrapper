@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from pathlib import Path
 
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 def _dedup_titles(content: str, levels: List[int]):
@@ -69,3 +70,11 @@ class ContentDedupModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[content_dedup] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口（模块级）
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = ContentDedupModule()
+    mod.run(context, config)
+    return {"ok": True}

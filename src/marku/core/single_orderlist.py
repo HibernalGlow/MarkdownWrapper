@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 def _process(content: str) -> str:
@@ -53,3 +54,11 @@ class SingleOrderListModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[single_orderlist_remover] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = SingleOrderListModule()
+    mod.run(context, config)
+    return {"ok": True}

@@ -7,6 +7,7 @@ from pathlib import Path
 from lxml import etree
 
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 
 def _convert_table(html_table: str) -> str:
@@ -83,3 +84,11 @@ class HtmlTableModule(BaseModule):
                     print(f"[html2sy_table] ok tables=0 - {file}")
         print(f"[html2sy_table] files={files} tables_converted={total_tables}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": files, "tables": total_tables, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = HtmlTableModule()
+    mod.run(context, config)
+    return {"ok": True}

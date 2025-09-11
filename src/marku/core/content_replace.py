@@ -15,6 +15,7 @@ from typing import Any, Dict, List
 import re
 
 from .base import BaseModule, ModuleContext
+from .plugins import hookimpl
 
 BASE_PATTERNS: List[tuple[str,str]] = [
     (r'^ ',''),
@@ -66,3 +67,11 @@ class ContentReplaceModule(BaseModule):
             details.append({"file": str(file), "changed": bool(modified)})
         print(f"[content_replace] files={total} changed={changed}{' (dry-run)' if dry_run else ''}")
         context.shared[self.name] = {"files": total, "changed": changed, "diffs": diffs, "details": details}
+
+
+# pluggy 插件入口
+@hookimpl
+def run(context: ModuleContext, config: Dict[str, Any]):
+    mod = ContentReplaceModule()
+    mod.run(context, config)
+    return {"ok": True}
