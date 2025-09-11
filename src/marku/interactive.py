@@ -99,6 +99,30 @@ def _interactive_wizard(config_path: str, initial_input: Optional[str] = None) -
   # dry-run 选择
   dry_run = Confirm.ask("是否以 dry-run 运行 (不写文件, 输出 diff)?", default=False)
 
+  # 选择执行的步骤（支持索引/名称/module，逗号分隔；留空=全部）
+  select_raw = Prompt.ask("选择要执行的步骤(逗号分隔, 支持索引/名称/module; 留空=全部)", default="")
+  selected_names: set[str] = set()
+  if select_raw.strip():
+    tokens = [t.strip() for t in select_raw.split(',') if t.strip()]
+    by_index = {str(i): s for i, s in enumerate(cfg.steps, 1)}
+    by_name = {s.name: s for s in cfg.steps}
+    by_module = {s.module: s for s in cfg.steps}
+    selected: list = []
+    for t in tokens:
+      s = by_index.get(t) or by_name.get(t) or by_module.get(t)
+      if s:
+        selected.append(s)
+    if selected:
+      selected_names = {s.name for s in selected}
+      cfg.steps = [s for s in cfg.steps if s.name in selected_names]
+  # 允许运行被禁用的步骤
+  include_disabled = False
+  if selected_names:
+    include_disabled = Confirm.ask("是否允许运行被禁用的步骤(仅对本次所选步骤)?", default=True)
+    if include_disabled:
+      for s in cfg.steps:
+        s.enabled = True
+
   # 注入 input：仅对未显式配置 input 的步骤
   abs_input = Path(input_path).resolve()
   for s in cfg.steps:

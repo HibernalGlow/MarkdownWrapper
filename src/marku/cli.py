@@ -193,6 +193,7 @@ def run_multiple(
 def pipeline(
     config: Path = typer.Option(Path("marku/marku_pipeline.toml"), "-c", "--config", help="管线 TOML 路径"),
     only: Optional[str] = typer.Option(None, help="只执行指定步骤 (逗号分隔)"),
+    include_disabled: bool = typer.Option(False, help="与 --only 搭配: 允许运行被禁用的步骤"),
     input: Optional[Path] = typer.Option(None, "-i", "--input", help="全局 input 注入"),
     dry_run: bool = typer.Option(False, help="干运行"),
     report: Optional[Path] = typer.Option(None, help="报告 JSON"),
@@ -203,6 +204,9 @@ def pipeline(
     if only:
         wanted = {n.strip() for n in only.split(',') if n.strip()}
         cfg.steps = [s for s in cfg.steps if s.name in wanted]
+        if include_disabled:
+            for s in cfg.steps:
+                s.enabled = True
         if not cfg.steps:
             console.print("[red]无匹配步骤，退出[/red]")
             raise typer.Exit(code=1)
@@ -213,6 +217,16 @@ def pipeline(
                 s.config["input"] = str(abs_input)
     ex = PipelineExecutor(cfg, use_rich=not no_preview, dry_run=dry_run, report_path=str(report) if report else None)
     ex.run()
+
+
+@app.command("interactive")
+def interactive(
+    config: Path = typer.Option(Path("marku/marku_pipeline.toml"), "-c", "--config", help="TOML 配置路径"),
+    input: Optional[Path] = typer.Option(None, "-i", "--input", help="默认输入路径 (可在交互中修改)"),
+):
+    """启动富交互向导：预览 -> 选择步骤(含禁用) -> 输入路径 -> dry-run -> 执行。"""
+    from .interactive import _interactive_wizard
+    _interactive_wizard(str(config), initial_input=str(input) if input else None)
 
 
 if __name__ == "__main__":  # pragma: no cover

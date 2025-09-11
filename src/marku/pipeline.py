@@ -184,9 +184,15 @@ class PipelineExecutor:
             table.add_column("Module")
             table.add_column("Enabled", justify="center")
             table.add_column("Input", overflow="fold")
+            table.add_column("Notes", overflow="fold")
             for i, s in enumerate(self.config.steps, 1):
                 used_input = s.config.get("input") or self.config.global_input or "-"
-                table.add_row(str(i), s.name, s.module, "✅" if s.enabled else "❌", used_input)
+                notes = []
+                if s.order is not None:
+                    notes.append(f"order={s.order}")
+                if s.depends:
+                    notes.append("dep="+"|".join(s.depends))
+                table.add_row(str(i), s.name, s.module, "✅" if s.enabled else "❌", used_input, ", ".join(notes) or "-")
             self._console.print(self._rich_Panel.fit(table, title="Pipeline 初始化"))
         else:
             self._print(f"[marku.pipeline] 启动管线，共 {steps_total} 个步骤。Root={self.context.root}")
@@ -303,6 +309,10 @@ class PipelineExecutor:
                         extra = ""
                         if "tables" in d:
                             extra = f"tables={d['tables']}"
+                        if "error" in d and d["error"]:
+                            extra = (extra+"; " if extra else "")+f"error={d['error']}"
+                        if "changed" in d and not d["changed"] and not self.dry_run:
+                            extra = (extra+"; " if extra else "")+"unchanged"
                         table.add_row(step_name, d.get("file","-"), "✅" if d.get("changed") else "", extra)
                         rows += 1
                 if rows:
