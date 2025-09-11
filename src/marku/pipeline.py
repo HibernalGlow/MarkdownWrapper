@@ -62,6 +62,8 @@ class PipelineConfig:
     sequence: List[str] = field(default_factory=list)  # 新增：统一顺序控制列表
     steps: List[StepConfig] = field(default_factory=list)
     global_input: str | None = None  # 新增：全局输入目录/文件 (被 CLI -i 覆盖)
+    plugin_disabled: List[str] = field(default_factory=list)  # 新增：禁用插件清单
+    plugin_enabled: List[str] = field(default_factory=list)   # 新增：启用插件清单
 
 
 class PipelineContext:
@@ -89,6 +91,11 @@ class PipelineLoader:
         if not isinstance(sequence, list):  # 容错
             sequence = []
 
+        # 插件开关
+        plugins_raw = data.get("plugins", {}) or {}
+        plugin_disabled = list(plugins_raw.get("disabled", []) or plugins_raw.get("disable", []) or [])
+        plugin_enabled = list(plugins_raw.get("enabled", []) or plugins_raw.get("enable", []) or [])
+
         steps_raw = data.get("step", []) or data.get("steps", [])
         steps: List[StepConfig] = []
         for idx, s in enumerate(steps_raw):
@@ -110,7 +117,15 @@ class PipelineLoader:
             except KeyError as e:  # 必要字段缺失
                 raise ValueError(f"第 {idx+1} 个 step 配置缺失字段: {e}")
 
-        return PipelineConfig(enable=enable, root=root, sequence=sequence, steps=steps, global_input=global_input)
+        return PipelineConfig(
+            enable=enable,
+            root=root,
+            sequence=sequence,
+            steps=steps,
+            global_input=global_input,
+            plugin_disabled=plugin_disabled,
+            plugin_enabled=plugin_enabled,
+        )
 
 
 class PipelineExecutor:
@@ -133,8 +148,19 @@ class PipelineExecutor:
                 self._console = None
         # 初始化插件系统（pluggy），保持向后兼容
         try:
-            from .core.plugins import initialize_plugins
+            from .core.plugins import initialize_plugins, plugin_registry
             initialize_plugins()
+            # 应用来自 TOML 的插件开关（disabled 优先生效）
+            for n in self.config.plugin_enabled:
+                try:
+                    plugin_registry.enable(n)
+                except Exception:
+                    pass
+            for n in self.config.plugin_disabled:
+                try:
+                    plugin_registry.disable(n)
+                except Exception:
+                    pass
         except Exception:
             pass
 

@@ -20,6 +20,38 @@ from .core import plugins as _plugins
 
 app = typer.Typer(add_completion=False, help="marku modular markdown toolkit")
 console = Console()
+def _apply_toml_plugin_toggles(config: Path | None):
+    if not config:
+        return
+    try:
+        cfg = PipelineLoader.load(str(config))
+        pm = _plugins.plugin_registry
+        for n in cfg.plugin_enabled:
+            pm.enable(n)
+        for n in cfg.plugin_disabled:
+            pm.disable(n)
+    except Exception:
+        pass
+
+
+@app.callback(invoke_without_command=True)
+def _entry(
+    ctx: typer.Context,
+    config: Path = typer.Option(None, "-c", "--config", help="TOML 配置路径(默认使用包内 marku_pipeline.toml)"),
+):
+    """未提供子命令时，进入富交互向导：预览 -> 输入路径 -> dry-run 选择 -> 执行。"""
+    if ctx.invoked_subcommand is not None:
+        return
+    try:
+        from .interactive import _interactive_wizard
+        from pathlib import Path as _P
+        cfg = config or (_P(__file__).parent / "marku_pipeline.toml")
+        _interactive_wizard(str(cfg))
+        raise typer.Exit()
+    except Exception:
+        # 回落到帮助
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
 
 
 def _inject_input(config: dict, input_path: Path):
@@ -39,7 +71,9 @@ def list():
 
 
 @app.command()
-def plugins():
+def plugins(
+    config: Path = typer.Option(None, "-c", "--config", help="TOML 配置路径(用于应用 [plugins] 开关)"),
+):
     """列出已发现的插件及其来源 (builtin / legacy / entry_point)。"""
     table = Table(title="Discovered Plugins")
     table.add_column("Name", style="cyan")
@@ -49,6 +83,7 @@ def plugins():
     try:
         _plugins.initialize_plugins()
         pm = _plugins.plugin_registry
+        _apply_toml_plugin_toggles(config)
         for n in pm.list_plugins():
             obj = pm.get_plugin(n)
             enabled = "✅" if pm.has_plugin(n) and not pm.is_disabled(n) else "❌"
@@ -60,10 +95,13 @@ def plugins():
 
 
 @app.command("plugin-status")
-def plugin_status():
+def plugin_status(
+    config: Path = typer.Option(None, "-c", "--config", help="TOML 配置路径(用于应用 [plugins] 开关)"),
+):
     """显示插件状态（启用/禁用/来源）。"""
     _plugins.initialize_plugins()
     pm = _plugins.plugin_registry
+    _apply_toml_plugin_toggles(config)
     table = Table(title="Plugin Status")
     table.add_column("Name", style="cyan")
     table.add_column("Enabled", justify="center")
