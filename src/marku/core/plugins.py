@@ -41,8 +41,10 @@ class PluginRegistry:
     def __init__(self):
         self._pm = PluginManager("marku")
         self._pm.add_hookspecs(MarkuSpec)
-        self._legacy_registry: Dict[str, Any] = {}
-        self._discovered_plugins: Dict[str, Any] = {}
+        self._legacy_registry = {}
+        self._discovered_plugins = {}
+        self._origins = {}  # name -> entry_point|builtin|legacy
+        self._disabled = set()
 
     def register_legacy_module(self, name: str, module_class: Any):
         """注册遗留模块（向后兼容）"""
@@ -57,30 +59,53 @@ class PluginRegistry:
 
     def discover_plugins(self):
         """自动发现插件"""
-        # 1. 通过 entry_points 发现插件
+        # 1. 通过 pluggy 的入口加载（若可用）或手动 entry_points 发现
         try:
-            for entry_point in importlib.metadata.entry_points(group="marku.plugins"):
+            load_ep = getattr(self._pm, "load_setuptools_entrypoints", None)
+            if callable(load_ep):
+                before = set(getattr(self._pm, "_name2plugin", {}).keys())
+                load_ep("marku.plugins")
+                after = set(getattr(self._pm, "_name2plugin", {}).keys())
+                for name in sorted(after - before):
+                    try:
+                        plugin = self._pm.get_plugin(name)
+                        self._discovered_plugins[name] = plugin
+                        self._origins[name] = "entry_point"
+                        logger.info(f"发现插件: {name} (entry_point)")
+                    except Exception:
+                        pass
+            else:
                 try:
-                    plugin = entry_point.load()
-                    if not self._pm.has_plugin(entry_point.name):
-                        self._pm.register(plugin, name=entry_point.name)
-                        self._discovered_plugins[entry_point.name] = plugin
-                        logger.info(f"发现插件: {entry_point.name} ({entry_point.module})")
+                    for entry_point in importlib.metadata.entry_points(group="marku.plugins"):
+                        try:
+                            plugin = entry_point.load()
+                            if not self._pm.has_plugin(entry_point.name):
+                                self._pm.register(plugin, name=entry_point.name)
+                                self._discovered_plugins[entry_point.name] = plugin
+                                self._origins[entry_point.name] = "entry_point"
+                                logger.info(f"发现插件: {entry_point.name} ({entry_point.module})")
+                        except Exception as e:
+                            logger.warning(f"加载插件失败 {entry_point.name}: {e}")
                 except Exception as e:
-                    logger.warning(f"加载插件失败 {entry_point.name}: {e}")
-        except Exception as e:
-            logger.debug(f"没有找到 entry_points 插件: {e}")
+                    logger.debug(f"没有找到 entry_points 插件: {e}")
+        except Exception:
+            # 安静失败，继续走后续注册
+            pass
 
         # 2. 注册遗留模块作为插件
-        for name, module_class in self._legacy_registry.items():
-            try:
-                # 创建包装器将遗留模块适配为插件
-                if not self._pm.has_plugin(name):
-                    wrapper = LegacyModuleWrapper(module_class)
-                    self._pm.register(wrapper, name=name)
-                    logger.debug(f"注册遗留模块包装器: {name}")
-            except Exception as e:
-                logger.debug(f"注册遗留模块失败 {name}: {e}")
+        try:
+            for name, module_class in self._legacy_registry.items():
+                try:
+                    if not self._pm.has_plugin(name):
+                        wrapper = LegacyModuleWrapper(module_class)
+                        self._pm.register(wrapper, name=name)
+                        self._discovered_plugins[name] = wrapper
+                        self._origins[name] = "legacy"
+                        logger.debug(f"注册遗留模块包装器: {name}")
+                except Exception as e:
+                    logger.debug(f"注册遗留模块失败 {name}: {e}")
+        except Exception:
+            pass
 
     def get_plugin(self, name: str) -> Optional[Any]:
         """获取插件"""
@@ -88,7 +113,26 @@ class PluginRegistry:
 
     def list_plugins(self) -> List[str]:
         """列出所有可用插件"""
-        return list(self._pm.list_plugin_names())
+        names = set(self._discovered_plugins.keys()) | set(self._legacy_registry.keys())
+        # pluggy may keep an internal name->plugin mapping, try to use it
+        try:
+            nm = getattr(self._pm, "_name2plugin", None)
+            if isinstance(nm, dict):
+                names |= set(nm.keys())
+        except Exception:
+            pass
+        return sorted(names)
+
+    def list_plugins_status(self) -> List[Dict[str, Any]]:
+        """列出插件的状态与来源"""
+        items = []
+        for n in self.list_plugins():
+            items.append({
+                "name": n,
+                "enabled": self.has_plugin(n),
+                "origin": self._origins.get(n, "unknown"),
+            })
+        return items
 
     def call_plugin(self, name: str, context, config: Dict[str, Any]) -> Dict[str, Any]:
         """调用插件"""
@@ -109,6 +153,41 @@ class PluginRegistry:
     def has_plugin(self, name: str) -> bool:
         """检查插件是否存在"""
         return self._pm.has_plugin(name)
+
+    def is_disabled(self, name: str) -> bool:
+        return name in self._disabled
+
+    def disable(self, name: str) -> bool:
+        """禁用插件: 从 pluggy 注销并记录禁用集"""
+        try:
+            if self._pm.has_plugin(name):
+                self._pm.unregister(name=name)
+            self._disabled.add(name)
+            return True
+        except Exception:
+            return False
+
+    def enable(self, name: str) -> bool:
+        """启用插件: 从保存源重新注册"""
+        try:
+            if self._pm.has_plugin(name):
+                # 已启用
+                if name in self._disabled:
+                    self._disabled.discard(name)
+                return True
+            plugin = self._discovered_plugins.get(name)
+            if plugin is None and name in self._legacy_registry:
+                plugin = LegacyModuleWrapper(self._legacy_registry[name])
+            if plugin is None:
+                return False
+            self._pm.register(plugin, name=name)
+            self._disabled.discard(name)
+            return True
+        except Exception:
+            return False
+
+    def get_origin(self, name: str) -> str:
+        return self._origins.get(name, "unknown")
 
 
 class LegacyModuleWrapper:
@@ -194,6 +273,8 @@ def initialize_plugins():
                     mod = _il.import_module(_rel, __package__)
                     if hasattr(mod, "run"):
                         plugin_registry._pm.register(mod, name=_name)
+                        plugin_registry._discovered_plugins[_name] = mod
+                        plugin_registry._origins[_name] = "builtin"
             except Exception:
                 continue
     except Exception:

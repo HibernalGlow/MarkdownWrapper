@@ -173,6 +173,14 @@ class PipelineExecutor:
             if not step.enabled:
                 self._print(f"[marku.pipeline] 跳过步骤 {idx}: {step.name} (disabled)")
                 continue
+            # 若插件在运行时被禁用，则直接跳过（避免走 legacy 回退路径）
+            try:
+                from .core.plugins import plugin_registry as _pm
+                if getattr(_pm, "is_disabled", None) and _pm.is_disabled(step.module):
+                    self._print(f"[marku.pipeline] 跳过步骤 {idx}: {step.name} (plugin disabled)")
+                    continue
+            except Exception:
+                pass
             header = f"步骤 {idx}/{len(ordered_steps)}: {step.name} -> {step.module}{'.'+step.clazz if step.clazz else ''}"
             effective_input = step.config.get("input") or self.config.global_input
             if not effective_input:
@@ -294,6 +302,9 @@ class PipelineExecutor:
         # 优先：使用 pluggy 插件注册表（初始化已在 __init__ 完成）
         try:
             from .core.plugins import plugin_registry
+            # 跳过被禁用的插件
+            if getattr(plugin_registry, "is_disabled", lambda n: False)(step.module):
+                raise RuntimeError(f"插件已禁用: {step.module}")
             if plugin_registry.has_plugin(step.module) and not step.clazz:
                 # 返回一个轻量 Runner 适配器，保持与旧代码一致的 .run(config) 调用方式
                 class _PluginRunner:

@@ -16,6 +16,7 @@ from rich.console import Console
 from .core.registry import REGISTRY, create
 from .core.base import ModuleContext
 from .pipeline import PipelineLoader, PipelineExecutor
+from .core import plugins as _plugins
 
 app = typer.Typer(add_completion=False, help="marku modular markdown toolkit")
 console = Console()
@@ -35,6 +36,65 @@ def list():
     for name, cls in REGISTRY.items():
         table.add_row(name, cls.__name__)
     console.print(table)
+
+
+@app.command()
+def plugins():
+    """列出已发现的插件及其来源 (builtin / legacy / entry_point)。"""
+    table = Table(title="Discovered Plugins")
+    table.add_column("Name", style="cyan")
+    table.add_column("Enabled", justify="center")
+    table.add_column("Source")
+    table.add_column("Obj")
+    try:
+        _plugins.initialize_plugins()
+        pm = _plugins.plugin_registry
+        for n in pm.list_plugins():
+            obj = pm.get_plugin(n)
+            enabled = "✅" if pm.has_plugin(n) and not pm.is_disabled(n) else "❌"
+            src = pm.get_origin(n) if hasattr(pm, "get_origin") else "unknown"
+            table.add_row(n, enabled, src, str(obj))
+    except Exception as e:
+        console.print(f"[red]列出插件失败: {e}[/red]")
+    console.print(table)
+
+
+@app.command("plugin-status")
+def plugin_status():
+    """显示插件状态（启用/禁用/来源）。"""
+    _plugins.initialize_plugins()
+    pm = _plugins.plugin_registry
+    table = Table(title="Plugin Status")
+    table.add_column("Name", style="cyan")
+    table.add_column("Enabled", justify="center")
+    table.add_column("Source")
+    for item in pm.list_plugins_status():
+        table.add_row(item["name"], "✅" if item["enabled"] and not pm.is_disabled(item["name"]) else "❌", item["origin"])
+    console.print(table)
+
+
+@app.command("plugin-disable")
+def plugin_disable(name: str = typer.Argument(..., help="插件名")):
+    """禁用一个插件（运行时）。"""
+    _plugins.initialize_plugins()
+    pm = _plugins.plugin_registry
+    ok = pm.disable(name)
+    if ok:
+        console.print(f"[yellow]已禁用插件: {name}[/yellow]")
+    else:
+        console.print(f"[red]禁用失败或插件不存在: {name}[/red]")
+
+
+@app.command("plugin-enable")
+def plugin_enable(name: str = typer.Argument(..., help="插件名")):
+    """启用一个插件（运行时）。"""
+    _plugins.initialize_plugins()
+    pm = _plugins.plugin_registry
+    ok = pm.enable(name)
+    if ok:
+        console.print(f"[green]已启用插件: {name}[/green]")
+    else:
+        console.print(f"[red]启用失败或插件不存在: {name}[/red]")
 
 
 @app.command()
