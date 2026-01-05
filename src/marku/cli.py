@@ -144,13 +144,26 @@ def run(
     recursive: bool = typer.Option(False, help="递归查找 *.md"),
     dry_run: bool = typer.Option(False, help="干运行: 不写文件, 收集 diff"),
     verbose: bool = typer.Option(True, help="显示每文件状态"),
+    enable_undo: bool = typer.Option(True, "--undo/--no-undo", help="启用撤销记录 (默认启用)"),
 ):
     """运行单个核心模块 (不依赖 pipeline)。"""
     if module not in REGISTRY:
         raise typer.BadParameter(f"未注册模块: {module}")
+
     ctx = ModuleContext(root=Path.cwd())
     if dry_run:
         ctx.shared['__dry_run'] = True
+
+    # 启用撤销
+    if enable_undo and not dry_run:
+        from .core.undo_git import GitUndoManager
+        # 如果 input 是文件，取其父目录作为仓库根路径
+        repo_root = input.parent if input.is_file() else input
+        ctx.undo_manager = GitUndoManager(repo_root)
+        # 运行前如果 dirty，先自动保存一份
+        if ctx.undo_manager.is_dirty():
+            ctx.undo_manager.save_state("Auto-save before module run")
+
     mod = create(module)
     config = {
         "input": str(input),
@@ -160,6 +173,13 @@ def run(
         "verbose": verbose,
     }
     mod.run(ctx, config)
+
+    # 运行后保存状态作为此模块的提交
+    if ctx.undo_manager:
+        sha = ctx.undo_manager.save_state(f"run module: {module}")
+        if sha:
+            console.print(f"[dim]已保存操作记录: {sha[:8]} (可用 'marku undo' 撤销)[/dim]")
+
     data = ctx.shared.get(module, {})
     if dry_run and data.get("diffs"):
         for d in data["diffs"][:3]:
@@ -229,5 +249,66 @@ def interactive(
     _interactive_wizard(str(config), initial_input=str(input) if input else None)
 
 
+@app.command()
+def undo(
+    commit_id: Optional[str] = typer.Argument(None, help="要回滚到的提交 ID (不填则撤销最近一次)"),
+):
+    """撤销文件修改操作 (Git 版)。"""
+    from .core.undo_git import GitUndoManager
+    
+    # 默认当前目录为仓库根
+    mgr = GitUndoManager(Path.cwd())
+    
+    if commit_id:
+        success = mgr.revert_to(commit_id)
+    else:
+        success = mgr.undo_latest()
+
+    if success:
+        console.print("[green]✓ 成功撤销操作[/green]")
+    else:
+        console.print("[yellow]撤销未执行或未发现可撤销项[/yellow]")
+
+
+@app.command()
+def history(
+    limit: int = typer.Option(10, "-n", "--limit", help="显示记录数量"),
+):
+    """查看 Git 操作历史。"""
+    from .core.undo_git import GitUndoManager
+    from rich.table import Table
+
+    mgr = GitUndoManager(Path.cwd())
+    records = mgr.get_history(limit)
+
+    if not records:
+        console.print("[dim]暂无 marku 操作历史[/dim]")
+        return
+
+    table = Table(title="Git 操作历史 (marku)")
+    table.add_column("Commit ID", style="cyan")
+    table.add_column("时间")
+    table.add_column("摘要")
+    table.add_column("作者")
+
+    for r in records:
+        table.add_row(
+            r["id"],
+            r["time"].strftime("%m-%d %H:%M"),
+            r["summary"],
+            r["author"]
+        )
+
+    console.print(table)
+    console.print("[dim]使用 'marku undo <ID>' 恢复到指定版本[/dim]")
+
+
+@app.command("clear-history")
+def clear_history():
+    """Git 模式下不支持内置清理，请使用 Git 命令清理。"""
+    console.print("[yellow]Git 模式下请使用标准 Git 工具管理历史记录（如 git log, git gc 等）。[/yellow]")
+
+
 if __name__ == "__main__":  # pragma: no cover
     app()
+

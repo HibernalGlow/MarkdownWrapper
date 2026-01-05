@@ -1,22 +1,24 @@
 """核心模块基类与通用上下文定义"""
 from __future__ import annotations
 
+import difflib
+import fnmatch
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .undo_git import GitUndoManager
 
 
 @dataclass
 class ModuleContext:
     root: Path
     shared: Dict[str, Any] = field(default_factory=dict)
+    undo_manager: "GitUndoManager | None" = None
 
     def resolve(self, *parts: str | Path) -> Path:
         return (self.root.joinpath(*parts)).resolve()
-
-
-import fnmatch
-import difflib
 
 
 class BaseModule:
@@ -62,14 +64,30 @@ class BaseModule:
                 if f.is_file() and match_patterns(f):
                     yield f
 
-    def _maybe_write(self, file: Path, original: str, new_text: str, dry_run: bool, diffs: list):
+    def _maybe_write(
+        self,
+        file: Path,
+        original: str,
+        new_text: str,
+        dry_run: bool,
+        diffs: list,
+        context: ModuleContext | None = None,
+    ) -> bool:
+        """写入文件
+
+        Git 模式下，备份不再通过单个文件记录，而是由 Git 掌管提交。
+        """
         if original == new_text:
             return False
+
         if dry_run:
             diff_lines = list(difflib.unified_diff(
                 original.splitlines(True), new_text.splitlines(True),
                 fromfile=str(file), tofile=str(file)))
             diffs.append({"file": str(file), "diff": diff_lines[:5000]})  # 防止超大
             return True
+
+        # Git 逻辑: 在 run 方法开始前 save_state，在 run 完成后 save_state
+        # 这里只负责写入
         file.write_text(new_text, encoding="utf-8")
         return True
