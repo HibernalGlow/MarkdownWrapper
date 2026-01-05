@@ -11,6 +11,7 @@ from .single_orderlist import SingleOrderListModule
 from .t2list_module import T2ListModule
 from .content_replace import ContentReplaceModule
 from .title_convert import TitleNormalizeModule
+from .markt_module import MarktModule
 
 
 REGISTRY: Dict[str, Type[BaseModule]] = {
@@ -21,8 +22,9 @@ REGISTRY: Dict[str, Type[BaseModule]] = {
         ImagePathModule,
         SingleOrderListModule,
         T2ListModule,
-    ContentReplaceModule,
-    TitleNormalizeModule,
+        ContentReplaceModule,
+        TitleNormalizeModule,
+        MarktModule,
     ]
 }
 

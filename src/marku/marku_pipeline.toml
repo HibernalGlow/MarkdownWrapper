@@ -82,3 +82,22 @@ order = 60
 relative_pattern = "images/"
 base_url = "https://example.com/assets/"
 
+[[step]]
+name = "markt"
+module = "markt"
+enabled = false  # 默认关闭
+order = 70
+[step.config]
+mode = "h2l"  # h2l=标题→列表, l2h=列表→标题
+# h2l 模式参数:
+bullet = "- "  # 列表标记: "- ", "* ", "+ "
+max_heading = 6  # 最大处理标题级别 1-6
+indent = 4  # 每级缩进空格数
+ordered = false  # 是否使用有序列表
+ordered_marker = "."  # 有序编号样式: "." 或 ")"
+# l2h 模式参数:
+start_level = 1  # 顶层映射到的标题级别 1-6
+max_level = 6  # 最大标题级别 1-6
+# 通用参数:
+max_list_depth = 0  # 最大列表层级(0=不限)
+
