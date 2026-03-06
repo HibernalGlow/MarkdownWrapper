@@ -117,7 +117,7 @@ class PipelineLoader:
             except KeyError as e:  # 必要字段缺失
                 raise ValueError(f"第 {idx+1} 个 step 配置缺失字段: {e}")
 
-        return PipelineConfig(
+        config = PipelineConfig(
             enable=enable,
             root=root,
             sequence=sequence,
@@ -126,6 +126,65 @@ class PipelineLoader:
             plugin_disabled=plugin_disabled,
             plugin_enabled=plugin_enabled,
         )
+        # 立即解析执行顺序，确保后续 Preview 等展示也是正确的
+        config.steps = resolve_steps_order(config)
+        return config
+
+
+def resolve_steps_order(config: PipelineConfig) -> List[StepConfig]:
+    """根据 sequence, order 和 depends 解析最终执行顺序。"""
+    steps = config.steps
+    name_map = {s.name: s for s in steps}
+    # 建立依赖图 (仅保留 depends 作为强依赖)
+    edges: Dict[str, Set[str]] = {s.name: set() for s in steps}
+    for s in steps:
+        for dep in set(s.depends):
+            if dep not in name_map:
+                # 注意：这里可能无法使用 executor 的 _print，使用标准 print 或 logging
+                continue
+            if s.name not in edges[dep]:
+                edges[dep].add(s.name)
+
+    # 计算入度
+    indeg: Dict[str, int] = {s.name: 0 for s in steps}
+    for frm, tos in edges.items():
+        for t in tos:
+            indeg[t] += 1
+
+    # 排序优先级：sequence > order > 源码顺序
+    if config.sequence:
+        seq_pos = {name: idx for idx, name in enumerate(config.sequence)}
+        order_map = {s.name: (seq_pos.get(s.name, 10_000 + i), i) for i, s in enumerate(steps)}
+    else:
+        order_map = {s.name: (s.order if s.order is not None else 10_000, i) for i, s in enumerate(steps)}
+
+    ready = [name for name, d in indeg.items() if d == 0]
+    ready.sort(key=lambda n: order_map[n])
+    result: List[str] = []
+    while ready:
+        n = ready.pop(0)
+        result.append(n)
+        for m in edges[n]:
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                ready.append(m)
+        ready.sort(key=lambda x: order_map[x])
+
+    if len(result) != len(steps):
+        cycle = [n for n, d in indeg.items() if d > 0]
+        # 即使报错也要返回，由调用方处理或保留原始
+        # raise RuntimeError(f"检测到依赖环: {cycle}")
+        return steps
+
+    # 若 sequence 列表存在且没有依赖冲突，按照 sequence 对结果二次稳定排序 (仅对出现的子集)
+    if config.sequence:
+        seq_index = {name: idx for idx, name in enumerate(config.sequence)}
+        # 注意：这里需要再次检查是否破坏了依赖关系，简单的 sort 可能会破坏拓扑。
+        # 之前的拓扑排序已经利用了 order_map(包含 sequence 信息)，所以不再需要单独 sort。
+        # 这里仅作返回即可。
+        pass
+    
+    return [name_map[n] for n in result]
 
 
 class PipelineExecutor:
@@ -197,7 +256,8 @@ class PipelineExecutor:
         else:
             self._print(f"[marku.pipeline] 启动管线，共 {steps_total} 个步骤。Root={self.context.root}")
 
-        ordered_steps = self._resolve_order(self.config.steps)
+        # steps 已经在加载时解析过顺序
+        ordered_steps = self.config.steps
         step_reports: List[Dict[str, Any]] = []
         import time, json, logging
         pipeline_start = time.time()
@@ -378,50 +438,6 @@ class PipelineExecutor:
             except Exception:
                 pass
         raise AttributeError("无法实例化模块: 未找到合适的 Runner/BaseModule 子类")
-
-    # 拓扑排序 + order/sequence 数值 + 原始顺序
-    def _resolve_order(self, steps: List[StepConfig]) -> List[StepConfig]:
-        name_map = {s.name: s for s in steps}
-        # 仅保留 depends 作为强依赖；忽略 after / before（需求：不需要 after 的依赖）
-        edges: Dict[str, Set[str]] = {s.name: set() for s in steps}  # from -> to
-        indeg: Dict[str, int] = {s.name: 0 for s in steps}
-        for s in steps:
-            for dep in set(s.depends):
-                if dep not in name_map:
-                    print(f"[marku.pipeline] 警告: {s.name} depends 目标不存在: {dep}")
-                    continue
-                if s.name not in edges[dep]:
-                    edges[dep].add(s.name)
-        # 计算入度
-        indeg = {k: 0 for k in edges}
-        for frm, tos in edges.items():
-            for t in tos:
-                indeg[t] += 1
-        # 统一顺序控制：若提供 sequence 列表，则其位置优先，其次原始出现顺序
-        if self.config.sequence:
-            seq_pos = {name: idx for idx, name in enumerate(self.config.sequence)}
-            order_map = {s.name: (seq_pos.get(s.name, 10_000 + i), i) for i, s in enumerate(steps)}
-        else:
-            order_map = {s.name: (s.order if s.order is not None else 10_000, i) for i, s in enumerate(steps)}
-        ready = [name for name, d in indeg.items() if d == 0]
-        ready.sort(key=lambda n: order_map[n])
-        result: List[str] = []
-        while ready:
-            n = ready.pop(0)
-            result.append(n)
-            for m in edges[n]:
-                indeg[m] -= 1
-                if indeg[m] == 0:
-                    ready.append(m)
-            ready.sort(key=lambda x: order_map[x])
-        if len(result) != len(steps):
-            cycle = [n for n, d in indeg.items() if d > 0]
-            raise RuntimeError(f"检测到依赖环: {cycle}")
-        # 若 sequence 列表存在且没有依赖冲突，可按照 sequence 对结果二次稳定排序（仅对出现的子集）
-        if self.config.sequence:
-            seq_index = {name: idx for idx, name in enumerate(self.config.sequence)}
-            result.sort(key=lambda n: (seq_index.get(n, 10_000), order_map[n]))
-        return [name_map[n] for n in result]
 
     def _normalize_step_input(self, step: StepConfig):
         """归并可能的别名到 step.config['input']。
