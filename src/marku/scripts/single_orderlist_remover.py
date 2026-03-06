@@ -4,6 +4,7 @@ import argparse
 from typing import List, Tuple
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Prompt, Confirm
 from rich import print as rprint
 
 console = Console()
@@ -142,20 +143,28 @@ def main():
     args = parser.parse_args()
     
     path = args.path
-    if not path and not args.demo:
-        # 默认处理当前目录下的1.md文件
-        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), '1.md')
-        process_file(filename)
-        return
+    recursive = args.recursive
     
-    if args.demo:
+    if not path and not args.demo:
+        # 默认使用丰富的命令行提示符请求输入
+        default_path = str(os.path.dirname(os.path.abspath(__file__)))
+        path_input = Prompt.ask(
+            "请输入要处理的文件或目录路径 (留空处理当前目录下的1.md)", 
+            default=""
+        )
+        if not path_input.strip():
+            path = os.path.join(default_path, '1.md')
+        else:
+            path = path_input.strip()
+            if os.path.isdir(path):
+                recursive = Confirm.ask("是否递归处理子目录？", default=recursive)
+    
+    elif args.demo:
         # 演示模式，处理1.md文件
-        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), '1.md')
-        process_file(filename)
-        return
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '1.md')
         
     if os.path.isdir(path):
-        files, changes = process_directory(path, args.recursive)
+        files, changes = process_directory(path, recursive)
         console.print(Panel(f"[bold green]共处理了 {files} 个文件，修改了 {changes} 处有序列表[/]", 
                           title="处理完成", border_style="green"))
     elif os.path.isfile(path):
