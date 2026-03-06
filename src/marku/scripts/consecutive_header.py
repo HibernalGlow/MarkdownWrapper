@@ -265,7 +265,7 @@ def main():
         "1: 从第二个连续标题开始转换\n"
         "2: 从第一个连续标题开始转换",
         choices=["1", "2"],
-        default=1
+        default=2
     )
     verbose = Confirm.ask("启用详细日志记录 (DEBUG 级别)？", default=False)
 
