@@ -263,6 +263,7 @@ def initialize_plugins():
             "html2sy_table": ".html_table",
             "image_path_replacer": ".image_path",
             "single_orderlist_remover": ".single_orderlist",
+            "missing_image_remover": ".missing_image",
             "t2list": ".t2list_module",
             "content_replace": ".content_replace",
             "title_convert": ".title_convert",

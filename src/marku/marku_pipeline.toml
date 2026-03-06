@@ -10,6 +10,7 @@ sequence = [
 	"tables",
 	"single-olist",
 	"t2list",
+	"missing-image",
 	"image-path",
 ]
 
@@ -72,6 +73,15 @@ name = "t2list"
 module = "t2list"
 enabled = false  # 默认关闭，可在需要时开启
 order = 50
+
+[[step]]
+name = "missing-image"
+module = "missing_image_remover"
+enabled = true
+order = 55
+[step.config]
+check_file_uri = true
+check_relative = false
 
 [[step]]
 name = "image-path"
